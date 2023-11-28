@@ -1,0 +1,42 @@
+<script type="module">
+  const wsURL = new URL(location)
+  wsURL.protocol = "wss:"
+  wsURL.pathname = "/ws"
+  const ws = new WebSocket(wsURL)
+  await new Promise(resolve => ws.onopen = resolve)
+
+  ws.onmessage = event => {
+    const data = JSON.parse(event.data)
+    if (data.type === "addIceCandidate") {
+      pc.addIceCandidate(data.candidate)
+    } else if (data.type === "setRemoteDescription") {
+      pc.setRemoteDescription(data.description)
+    }
+  }
+
+  const pc = new RTCPeerConnection()
+
+  const dc = pc.createDataChannel("mydata")
+  dc.onopen = console.log
+  dc.onclose = console.log
+  dc.onmessage = event => {
+    console.log(event.data)
+    dc.send("Hello from local.html!")
+  }
+
+  pc.onicecandidate = event => {
+    if (event.candidate) {
+      ws.send(JSON.stringify({
+        type: "addIceCandidate",
+        candidate: event.candidate
+      }))
+    }
+  }
+  const offer = await pc.createOffer()
+  await pc.setLocalDescription(offer)
+  ws.send(JSON.stringify({
+    type: "setRemoteDescription",
+    description: pc.localDescription
+  }))
+</script>
+<p>Check the DevTools console!</p>

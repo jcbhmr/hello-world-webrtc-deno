@@ -1,6 +1,8 @@
 import { serveDir } from "https://deno.land/std@0.208.0/http/file_server.ts";
 const wss = new Set<WebSocket>()
-new BroadcastChannel("socketmessage").onmessage = (event) => wss.forEach(w => w.send(event.data))
+if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
+    new BroadcastChannel("socketmessage").onmessage = (event) => wss.forEach(w => w.send(event.data))
+}
 Deno.serve(async (request) => {
     if (new URLPattern({ pathname: "/ws" }).test(request.url)) {
         const { socket, response } = Deno.upgradeWebSocket(request)
